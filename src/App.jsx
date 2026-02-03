@@ -375,7 +375,6 @@ export default function PortfolioDashboard() {
           </div>
           <div className="mt-3 flex flex-wrap gap-4 text-xs text-blue-200"></div>
             <span>Amadea Schaum</span>
-          </div>
         </div>
         
         <div className="bg-white rounded-2xl p-6 mb-6 shadow-lg border border-slate-200">
