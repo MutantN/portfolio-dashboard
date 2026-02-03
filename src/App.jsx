@@ -330,7 +330,7 @@ export default function PortfolioDashboard() {
             <span>• Risk-Free Rate: {(RISK_FREE_RATE * 100)}%</span>
           </div>
           <div className="mt-3 flex flex-wrap gap-4 text-xs text-blue-200"></div>
-            <span> Nadia Schaum</span>
+            <span> Amadea Schaum</span>
         </div>
         
         <div className="bg-white rounded-2xl p-6 mb-6 shadow-lg border border-slate-200">
