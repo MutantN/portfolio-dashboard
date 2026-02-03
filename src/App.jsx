@@ -12,7 +12,6 @@ const SP500_TICKERS = [
 
 const RISK_FREE_RATE = 0.04;
 
-// Simple seeded random number generator
 class SeededRandom {
   constructor(seed) {
     this.seed = seed;
@@ -31,7 +30,6 @@ const generateStockReturns = (numStocks, numDays, seed) => {
   for (let day = 0; day < numDays; day++) {
     const dayReturns = [];
     for (let stock = 0; stock < numStocks; stock++) {
-      // Box-Muller transform for normal distribution
       const u1 = Math.max(0.0001, rng.next());
       const u2 = rng.next();
       const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
@@ -142,7 +140,6 @@ const maximizeSharpe = (meanReturns, covMatrix, seed) => {
 };
 
 const runSingleSimulation = (simId, numStocks, numDays) => {
-  // Select random stocks
   const rng = new SeededRandom(simId * 777);
   const selectedTickers = [];
   const usedIndices = new Set();
@@ -166,16 +163,20 @@ const runSingleSimulation = (simId, numStocks, numDays) => {
   return {
     simulation_id: simId,
     stocks: selectedTickers.join(','),
+    stocksList: selectedTickers,
     n_valid_stocks: numStocks,
     min_var_return: minVar.return,
     min_var_volatility: minVar.volatility,
     min_var_sharpe: minVar.sharpe_ratio,
+    min_var_weights: minVar.weights,
     max_ret_return: maxRet.return,
     max_ret_volatility: maxRet.volatility,
     max_ret_sharpe: maxRet.sharpe_ratio,
+    max_ret_weights: maxRet.weights,
     max_sharpe_return: maxSharpe.return,
     max_sharpe_volatility: maxSharpe.volatility,
     max_sharpe_sharpe: maxSharpe.sharpe_ratio,
+    max_sharpe_weights: maxSharpe.weights,
     status: 'SUCCESS'
   };
 };
@@ -255,6 +256,50 @@ const createHistogram = (data, bins = 15) => {
   }));
 };
 
+// Component to display stock weights table
+const WeightsTable = ({ title, stocks, weights, colorClass }) => {
+  if (!stocks || !weights) return null;
+  
+  // Combine stocks and weights, then sort by weight descending
+  const stockWeights = stocks.map((stock, i) => ({
+    stock,
+    weight: weights[i] || 0
+  })).sort((a, b) => b.weight - a.weight);
+  
+  return (
+    <div className="bg-white rounded-2xl p-5 shadow-lg border border-slate-200">
+      <h3 className={`font-semibold text-slate-800 mb-4 ${colorClass}`}>{title}</h3>
+      <div className="overflow-x-auto max-h-64 overflow-y-auto">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-slate-50">
+            <tr>
+              <th className="px-3 py-2 text-left font-semibold text-slate-600">Stock</th>
+              <th className="px-3 py-2 text-right font-semibold text-slate-600">Weight</th>
+              <th className="px-3 py-2 text-left font-semibold text-slate-600">Allocation</th>
+            </tr>
+          </thead>
+          <tbody>
+            {stockWeights.map((item, i) => (
+              <tr key={item.stock} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                <td className="px-3 py-2 font-medium text-slate-700">{item.stock}</td>
+                <td className="px-3 py-2 text-right font-mono">{(item.weight * 100).toFixed(2)}%</td>
+                <td className="px-3 py-2 w-32">
+                  <div className="w-full bg-slate-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full ${colorClass === 'text-emerald-600' ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                      style={{ width: `${Math.min(item.weight * 100 * 3, 100)}%` }}
+                    />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 export default function PortfolioDashboard() {
   const [numStocks, setNumStocks] = useState(15);
   const [numSimulations, setNumSimulations] = useState(50);
@@ -273,7 +318,6 @@ export default function PortfolioDashboard() {
     const numDays = Math.floor(historyYears * 252);
     const allResults = [];
     
-    // Use setTimeout to allow UI updates
     for (let sim = 0; sim < numSimulations; sim++) {
       await new Promise(resolve => setTimeout(resolve, 1));
       const result = runSingleSimulation(sim, numStocks, numDays);
@@ -329,8 +373,9 @@ export default function PortfolioDashboard() {
             <span>• Maximum Sharpe Ratio</span>
             <span>• Risk-Free Rate: {(RISK_FREE_RATE * 100)}%</span>
           </div>
-          <div className="mt-3 flex flex-wrap gap-4 text-xs text-blue-200"></div>
-            <span> Amadea Schaum</span>
+          <div className="mt-2 text-xs text-blue-200">
+            <span>Amadea Schaum</span>
+          </div>
         </div>
         
         <div className="bg-white rounded-2xl p-6 mb-6 shadow-lg border border-slate-200">
@@ -344,17 +389,17 @@ export default function PortfolioDashboard() {
               <label className="block text-sm font-medium text-slate-700">Stocks per Portfolio: {numStocks}</label>
               <input type="range" min="5" max="20" value={numStocks} onChange={(e) => setNumStocks(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" disabled={isRunning} />
               <div className="flex justify-between text-xs text-slate-500">
-                <span>10</span>
+                <span>5</span>
                 <span>20</span>
               </div>
             </div>
             
             <div className="space-y-2">
               <label className="block text-sm font-medium text-slate-700">Simulations: {numSimulations}</label>
-              <input type="range" min="10" max="5000" step="10" value={numSimulations} onChange={(e) => setNumSimulations(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" disabled={isRunning} />
+              <input type="range" min="10" max="1000" step="10" value={numSimulations} onChange={(e) => setNumSimulations(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" disabled={isRunning} />
               <div className="flex justify-between text-xs text-slate-500">
                 <span>10</span>
-                <span>5000</span>
+                <span>1000</span>
               </div>
             </div>
             
@@ -439,7 +484,6 @@ export default function PortfolioDashboard() {
                   <div className="bg-white/60 rounded-lg p-3"><div className="text-lg font-bold text-slate-700">{formatPercent(analysis.bestPortfolios.minVar.min_var_volatility)}</div><div className="text-xs text-slate-500">Volatility</div></div>
                   <div className="bg-white/60 rounded-lg p-3"><div className="text-lg font-bold text-emerald-700">{formatNumber(analysis.bestPortfolios.minVar.min_var_sharpe)}</div><div className="text-xs text-slate-500">Sharpe</div></div>
                 </div>
-                <div className="mt-3 text-xs text-slate-600 bg-white/40 rounded-lg p-2 overflow-x-auto"><span className="font-medium">Stocks:</span> {analysis.bestPortfolios.minVar.stocks}</div>
               </div>
               
               <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-200">
@@ -453,8 +497,23 @@ export default function PortfolioDashboard() {
                   <div className="bg-white/60 rounded-lg p-3"><div className="text-lg font-bold text-slate-700">{formatPercent(analysis.bestPortfolios.maxSharpe.max_sharpe_volatility)}</div><div className="text-xs text-slate-500">Volatility</div></div>
                   <div className="bg-white/60 rounded-lg p-3"><div className="text-lg font-bold text-amber-700">{formatNumber(analysis.bestPortfolios.maxSharpe.max_sharpe_sharpe)}</div><div className="text-xs text-slate-500">Sharpe</div></div>
                 </div>
-                <div className="mt-3 text-xs text-slate-600 bg-white/40 rounded-lg p-2 overflow-x-auto"><span className="font-medium">Stocks:</span> {analysis.bestPortfolios.maxSharpe.stocks}</div>
               </div>
+            </div>
+            
+            {/* Stock Weights Tables */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <WeightsTable 
+                title="Best Min Variance - Stock Weights"
+                stocks={analysis.bestPortfolios.minVar.stocksList}
+                weights={analysis.bestPortfolios.minVar.min_var_weights}
+                colorClass="text-emerald-600"
+              />
+              <WeightsTable 
+                title="Best Max Sharpe - Stock Weights"
+                stocks={analysis.bestPortfolios.maxSharpe.stocksList}
+                weights={analysis.bestPortfolios.maxSharpe.max_sharpe_weights}
+                colorClass="text-amber-600"
+              />
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
