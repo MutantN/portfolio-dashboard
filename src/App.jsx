@@ -373,7 +373,7 @@ export default function PortfolioDashboard() {
             <span>• Maximum Sharpe Ratio</span>
             <span>• Risk-Free Rate: {(RISK_FREE_RATE * 100)}%</span>
           </div>
-          <div className="mt-2 text-xs text-blue-200">
+          <div className="mt-3 flex flex-wrap gap-4 text-xs text-blue-200"></div>
             <span>Amadea Schaum</span>
           </div>
         </div>
@@ -399,7 +399,7 @@ export default function PortfolioDashboard() {
               <input type="range" min="10" max="5000" step="10" value={numSimulations} onChange={(e) => setNumSimulations(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" disabled={isRunning} />
               <div className="flex justify-between text-xs text-slate-500">
                 <span>10</span>
-                <span>000</span>
+                <span>5000</span>
               </div>
             </div>
             
