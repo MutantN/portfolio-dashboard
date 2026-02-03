@@ -396,10 +396,10 @@ export default function PortfolioDashboard() {
             
             <div className="space-y-2">
               <label className="block text-sm font-medium text-slate-700">Simulations: {numSimulations}</label>
-              <input type="range" min="10" max="1000" step="10" value={numSimulations} onChange={(e) => setNumSimulations(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" disabled={isRunning} />
+              <input type="range" min="10" max="5000" step="10" value={numSimulations} onChange={(e) => setNumSimulations(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" disabled={isRunning} />
               <div className="flex justify-between text-xs text-slate-500">
                 <span>10</span>
-                <span>1000</span>
+                <span>000</span>
               </div>
             </div>
             
