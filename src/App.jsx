@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { Play, Settings, TrendingUp, Shield, Zap, Target, RefreshCw, CheckCircle, BarChart3, PieChart, AlertTriangle, TrendingDown, Info, Loader2, Wifi, XCircle, SkipForward, Grid3X3 } from 'lucide-react';
 
@@ -381,10 +381,6 @@ export default function PortfolioDashboard() {
   const [fetchMsg, setFetchMsg] = useState('');
   const abortRef = useRef(null);
 
-  useEffect(() => {
-    console.log('%c[Market Data] /api/quotes endpoint requires FINNHUB_API_KEY. Add FMP_API_KEY to populate target/rating/upside fields.', 'color:#10b981;font-size:11px');
-  }, []);
-
   const skip = useCallback(() => { abortRef.current?.abort(); setFetching(false); setFetchStatus(Object.keys(liveData).length>0?'partial':'skipped'); }, [liveData]);
 
   const doFetch = useCallback(async (tickers) => {
@@ -495,12 +491,12 @@ export default function PortfolioDashboard() {
                 </div>))}
             </div>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-6">
-              <WeightsTable title="Min Variance \u2013 Live Prices" stocks={bMV.stocksList} weights={bMV.min_var_weights} colorClass="text-emerald-600" data={liveData} loading={fetching}/>
-              <WeightsTable title="Max Sharpe \u2013 Live Prices" stocks={bMS.stocksList} weights={bMS.max_sharpe_weights} colorClass="text-amber-600" data={liveData} loading={fetching}/>
+              <WeightsTable title="Min Variance Live Prices" stocks={bMV.stocksList} weights={bMV.min_var_weights} colorClass="text-emerald-600" data={liveData} loading={fetching}/>
+              <WeightsTable title="Max Sharpe Live Prices" stocks={bMS.stocksList} weights={bMS.max_sharpe_weights} colorClass="text-amber-600" data={liveData} loading={fetching}/>
             </div>
             <div className="grid grid-cols-1 gap-4 mb-6">
-              <CovarianceMatrixDisplay title="Min Variance \u2013 Covariance Matrix" stocks={bMV.stocksList} covMatrix={bMV.covariance_matrix} colorClass="text-emerald-600" borderColor="border-emerald-200" bgGradient="bg-emerald-100"/>
-              <CovarianceMatrixDisplay title="Max Sharpe \u2013 Covariance Matrix" stocks={bMS.stocksList} covMatrix={bMS.covariance_matrix} colorClass="text-amber-600" borderColor="border-amber-200" bgGradient="bg-amber-100"/>
+              <CovarianceMatrixDisplay title="Min Variance Covariance Matrix" stocks={bMV.stocksList} covMatrix={bMV.covariance_matrix} colorClass="text-emerald-600" borderColor="border-emerald-200" bgGradient="bg-emerald-100"/>
+              <CovarianceMatrixDisplay title="Max Sharpe Covariance Matrix" stocks={bMS.stocksList} covMatrix={bMS.covariance_matrix} colorClass="text-amber-600" borderColor="border-amber-200" bgGradient="bg-amber-100"/>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
               <div className="bg-white rounded-2xl p-5 shadow-lg border border-slate-200"><h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2"><BarChart3 className="w-5 h-5 text-slate-400"/>Efficient Frontier</h3><ResponsiveContainer width="100%" height={280}><ScatterChart margin={{top:10,right:10,bottom:40,left:50}}><CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0"/><XAxis dataKey="x" type="number" unit="%" domain={['auto','auto']} tick={{fontSize:11}} label={{value:'Volatility (%)',position:'insideBottom',offset:-10,fontSize:12}}/><YAxis dataKey="y" type="number" unit="%" domain={['auto','auto']} tick={{fontSize:11}} label={{value:'Return (%)',angle:-90,position:'insideLeft',fontSize:12}}/><Tooltip formatter={v=>[`${Number(v).toFixed(2)}%`]}/><Legend wrapperStyle={{fontSize:12}}/><Scatter name="Min Var" data={scatter.mv} fill="#10b981" fillOpacity={0.6}/><Scatter name="Max Sharpe" data={scatter.ms} fill="#f59e0b" fillOpacity={0.6}/></ScatterChart></ResponsiveContainer></div>
