@@ -41,7 +41,30 @@ function pickFirstString(obj, keys) {
 async function fetchFmpJson(url) {
   const r = await fetch(url);
   if (!r.ok) return null;
-  return r.json();
+  const json = await r.json();
+  if (json && typeof json === "object" && !Array.isArray(json) && (json["Error Message"] || json.error)) {
+    return null;
+  }
+  return json;
+}
+
+function deriveConsensusRating(row) {
+  const strongBuy = pickFirstNumber(row, ["strongBuy", "strongBuyCount", "strongBuyRatings"]);
+  const buy = pickFirstNumber(row, ["buy", "buyCount", "buyRatings"]);
+  const hold = pickFirstNumber(row, ["hold", "holdCount", "holdRatings"]);
+  const sell = pickFirstNumber(row, ["sell", "sellCount", "sellRatings"]);
+  const strongSell = pickFirstNumber(row, ["strongSell", "strongSellCount", "strongSellRatings"]);
+  const total = strongBuy + buy + hold + sell + strongSell;
+  if (total <= 0) return { rating: "N/A", analystCount: 0 };
+
+  const score = (2 * strongBuy + 1 * buy + 0 * hold - 1 * sell - 2 * strongSell) / total;
+  let rating = "Hold";
+  if (score >= 1.25) rating = "Strong Buy";
+  else if (score >= 0.5) rating = "Buy";
+  else if (score <= -1.25) rating = "Strong Sell";
+  else if (score <= -0.5) rating = "Sell";
+
+  return { rating, analystCount: total };
 }
 
 async function fetchFmpAnalystData(symbol, fmpToken) {
@@ -50,8 +73,8 @@ async function fetchFmpAnalystData(symbol, fmpToken) {
   }
 
   const targetCandidates = [
-    `https://financialmodelingprep.com/api/v4/price-target-consensus?symbol=${encodeURIComponent(symbol)}&apikey=${encodeURIComponent(fmpToken)}`,
-    `https://financialmodelingprep.com/api/v3/price-target-consensus?symbol=${encodeURIComponent(symbol)}&apikey=${encodeURIComponent(fmpToken)}`,
+    `https://financialmodelingprep.com/stable/price-target-consensus?symbol=${encodeURIComponent(symbol)}&apikey=${encodeURIComponent(fmpToken)}`,
+    `https://financialmodelingprep.com/stable/price-target-summary?symbol=${encodeURIComponent(symbol)}&apikey=${encodeURIComponent(fmpToken)}`,
   ];
 
   let targetRaw = null;
@@ -63,8 +86,8 @@ async function fetchFmpAnalystData(symbol, fmpToken) {
   }
 
   const ratingCandidates = [
-    `https://financialmodelingprep.com/api/v3/rating/${encodeURIComponent(symbol)}?apikey=${encodeURIComponent(fmpToken)}`,
-    `https://financialmodelingprep.com/api/v3/grade/${encodeURIComponent(symbol)}?apikey=${encodeURIComponent(fmpToken)}`,
+    `https://financialmodelingprep.com/stable/grades-consensus?symbol=${encodeURIComponent(symbol)}&apikey=${encodeURIComponent(fmpToken)}`,
+    `https://financialmodelingprep.com/stable/ratings-snapshot?symbol=${encodeURIComponent(symbol)}&apikey=${encodeURIComponent(fmpToken)}`,
   ];
 
   let ratingRaw = null;
@@ -76,10 +99,13 @@ async function fetchFmpAnalystData(symbol, fmpToken) {
   }
 
   const targetPrice = pickFirstNumber(targetRaw, ["targetConsensus", "targetPrice", "priceTarget", "targetMean", "targetMedian"]);
-  const analystCount = pickFirstNumber(targetRaw, ["analystCount", "numberAnalystOpinions", "numAnalysts", "numberOfAnalysts"]);
-  const targetDate = pickFirstString(targetRaw, ["date", "updatedAt", "publishedDate"]);
-  const rating = normalizeRating(pickFirstString(ratingRaw, ["ratingRecommendation", "rating", "recommendation", "newGrade"]));
-  const ratingDate = pickFirstString(ratingRaw, ["date", "gradingCompany", "publishedDate"]);
+  const targetAnalystCount = pickFirstNumber(targetRaw, ["analystCount", "numberAnalystOpinions", "numAnalysts", "numberOfAnalysts"]);
+  const targetDate = pickFirstString(targetRaw, ["date", "updatedAt", "publishedDate", "lastUpdated"]);
+  const mappedRating = normalizeRating(pickFirstString(ratingRaw, ["ratingRecommendation", "rating", "recommendation", "newGrade"]));
+  const derived = deriveConsensusRating(ratingRaw || {});
+  const rating = mappedRating !== "N/A" ? mappedRating : derived.rating;
+  const analystCount = Math.max(targetAnalystCount, derived.analystCount);
+  const ratingDate = pickFirstString(ratingRaw, ["date", "gradingCompany", "publishedDate", "lastUpdated"]);
 
   return { targetPrice, analystCount, targetDate, rating, ratingDate };
 }
